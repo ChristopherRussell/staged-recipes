@@ -11,28 +11,23 @@ source:
 
 build:
   number: 0
-  # Skip any Python < 3.10
   skip: true  # [py<310]
-  script:
-    - {{ PYTHON }} -m pip install . -vv
 
-  # script_env:
-  #   # keep the final .pyd and wheel small
-  #   - MATURIN_STRIP=1                                                           # [win]
-  #   - RUSTFLAGS=-C debuginfo=0 -C link-arg=/DEBUG:NONE                          # [win]
-  #   - CARGO_PROFILE_RELEASE_DEBUG=false                                         # [win]
+  # --- keep the linker lean on Windows ----------------------------------
+  script_env:
+    - MATURIN_STRIP=1                                         # [win]
+    - RUSTFLAGS=-C debuginfo=0 -C link-arg=/DEBUG:NONE        # [win]
+    - CARGO_PROFILE_RELEASE_DEBUG=false                       # [win]
 
-  # script:
-  #   - maturin build --release --strip -o wheelhouse
+  script: |
+    # one-liner is fine on Unix-likes
+    {{ PYTHON }} -m pip install . -vv                       # [not win]
 
-  #   # On unix‐like, the shell expands *.whl for us:
-  #   - {{ PYTHON }} -m pip install wheelhouse/*.whl -vv                          # [not win]
-  #   - rm -rf wheelhouse target                                                  # [not win]
-
-  #   # On Windows, cmd.exe does not expand *.whl — we do it via FOR:
-  #   - 'for %%F in (wheelhouse\*.whl) do {{ PYTHON }} -m pip install "%%F" -vv'  # [win]
-  #   - "if exist wheelhouse rmdir /S /Q wheelhouse"                              # [win]
-  #   - "if exist target    rmdir /S /Q target"                                   # [win]
+    # Windows still needs the explicit wheel phase
+    maturin build --release --strip -o wheelhouse           # [win]
+    for %%F in (wheelhouse\*.whl) do {{ PYTHON }} -m pip install "%%F" -vv  # [win]
+    if exist wheelhouse rmdir /S /Q wheelhouse              # [win]
+    if exist target    rmdir /S /Q target                   # [win]
 
 requirements:
   build:
@@ -47,7 +42,7 @@ requirements:
   run:
     - python
     - polars >=0.20.6
-    - libgcc
+    - libgcc            # [linux]   # don’t pull libgcc on Windows
 
 test:
   imports:
@@ -59,9 +54,11 @@ test:
 
 about:
   home: https://github.com/ChristopherRussell/polars-order-book
-  license: 'Apache-2.0'
+  license: Apache-2.0
   license_file: polars_order_book/LICENSE
-  summary: "A performant Polars expression plugin for calculating price level summaries from a dataframe of order book updates."
+  summary: >
+    A performant Polars expression plugin for calculating price-level summaries
+    from a dataframe of order-book updates.
 
 extra:
   recipe-maintainers:
