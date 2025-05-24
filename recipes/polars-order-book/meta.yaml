@@ -15,9 +15,16 @@ build:
 
   # --- keep the linker lean on Windows ----------------------------------
   script_env:
+    # --- existing flags that keep the artefact small --------------------
     - MATURIN_STRIP=1                                         # [win]
     - RUSTFLAGS=-C debuginfo=0 -C link-arg=/DEBUG:NONE        # [win]
     - CARGO_PROFILE_RELEASE_DEBUG=false                       # [win]
+
+    # --- be nicer to flaky networks -------------------------------
+    - CARGO_NET_RETRY=10          # default is 3
+    - CARGO_NET_TIMEOUT=60        # seconds; default is 30
+    # use the new sparse index instead of cloning the giant git index
+    - CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
   script: |
     # one-liner is fine on Unix-likes
@@ -63,3 +70,4 @@ about:
 extra:
   recipe-maintainers:
     - ChristopherRussell
+  
